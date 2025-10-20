@@ -1,0 +1,175 @@
+#!/bin/bash
+
+dry_run=false
+no_fzf=false
+
+# Parse flags
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  -h|--help)
+    echo "Usage: claude-cp [--dry-run] [--no-fzf] <dest_dir> [source_dir]"
+    echo "Copy a Claude Code conversation from source_dir (default: pwd) to dest_dir"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help   Show this help message"
+    echo "  --dry-run    Show what would be done without doing it"
+    echo "  --no-fzf     Use simple menu instead of fzf (for non-interactive contexts)"
+    exit 0
+    ;;
+  --dry-run)
+    dry_run=true
+    shift
+    ;;
+  --no-fzf)
+    no_fzf=true
+    shift
+    ;;
+  *)
+    break
+    ;;
+  esac
+done
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: claude-cp [--dry-run] [--no-fzf] <dest_dir> [source_dir]"
+  echo "Copy a Claude Code conversation from source_dir (default: pwd) to dest_dir"
+  echo ""
+  echo "Options:"
+  echo "  --dry-run    Show what would be done without doing it"
+  echo "  --no-fzf     Use simple menu instead of fzf (for non-interactive contexts)"
+  exit 1
+fi
+
+dest_dir="$1"
+source_dir="${2:-.}"
+
+# Resolve to absolute paths (source_dir may not exist, but we can still copy its conversations)
+# Use pwd -P to resolve symlinks (important for /tmp -> /private/tmp on macOS)
+if [[ -d "$source_dir" ]]; then
+  source_dir=$(cd "$source_dir" && pwd -P)
+else
+  # Convert to absolute path even if directory doesn't exist
+  if [[ "$source_dir" = /* ]]; then
+    source_dir="$source_dir"
+  else
+    source_dir="$(pwd -P)/$source_dir"
+  fi
+fi
+
+# Create dest_dir if it doesn't exist, then resolve to absolute path
+if [[ ! -d "$dest_dir" ]]; then
+  if $dry_run; then
+    echo "mkdir -p \"$dest_dir\""
+    # Convert to absolute path for dry-run (resolve symlinks)
+    if [[ "$dest_dir" = /* ]]; then
+      # Try to resolve symlinks in the path components that exist
+      dest_dir=$(python3 -c "import os; print(os.path.realpath('$dest_dir'))" 2>/dev/null || echo "$dest_dir")
+    else
+      dest_dir="$(pwd -P)/$dest_dir"
+      dest_dir=$(python3 -c "import os; print(os.path.realpath('$dest_dir'))" 2>/dev/null || echo "$dest_dir")
+    fi
+  else
+    mkdir -p "$dest_dir"
+    dest_dir=$(cd "$dest_dir" && pwd -P)
+  fi
+else
+  dest_dir=$(cd "$dest_dir" && pwd -P)
+fi
+
+# Create project paths
+source_proj="$HOME/.claude/projects/$(echo "$source_dir" | tr '/' '-')"
+dest_proj="$HOME/.claude/projects/$(echo "$dest_dir" | tr '/' '-')"
+
+# Verify source project exists
+if [[ ! -d "$source_proj" ]]; then
+  echo "Error: Source project directory does not exist: $source_proj"
+  echo "No conversations found for: $source_dir"
+  exit 1
+fi
+
+# Ensure destination project directory exists
+if $dry_run; then
+  echo "mkdir -p \"$dest_proj\""
+else
+  mkdir -p "$dest_proj"
+fi
+
+preview_lines=$(($(tput lines) / 2))
+
+# Find and select a .jsonl file
+if command -v fzf >/dev/null 2>&1 && [[ "$no_fzf" == "false" ]]; then
+  # Use fzf if available (interactive picker with preview)
+  selected=$(
+    find "$source_proj" -name "*.jsonl" -type f -exec ls -t {} + 2>/dev/null | fzf \
+      --header "$source_dir -> $dest_dir (Ctrl-D/U to scroll preview)" \
+      --preview 'echo "=== SUMMARY ===" ; jq -r "select(.type == \"summary\") | .summary" {} ; echo -e "\n=== RECENT MESSAGES ===" ; jq -r "select(.type == \"user\" or .type == \"assistant\") | .message.content | if type == \"array\" then .[].text? // empty else . end" {} | grep -v "^null$" | tail -n '"$preview_lines" \
+      --preview-window="right:50%:wrap" \
+      --bind="ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up"
+  )
+else
+  # Fallback: simple numbered list with summaries
+  echo "Available conversations:"
+  echo ""
+
+  files=()
+  while IFS= read -r file; do
+    files+=("$file")
+  done < <(find "$source_proj" -name "*.jsonl" -type f -exec ls -t {} + 2>/dev/null)
+
+  if [[ ${#files[@]} -eq 0 ]]; then
+    echo "No conversations found"
+    exit 1
+  fi
+
+  for i in "${!files[@]}"; do
+    file="${files[$i]}"
+    summary=$(jq -r 'select(.type == "summary") | .summary' "$file" 2>/dev/null | head -1)
+    if [[ -z "$summary" ]]; then
+      # Fallback to first user message if no summary exists
+      first_msg=$(jq -r 'select(.type == "user") | .message.content | if type == "array" then .[].text? // empty else . end' "$file" 2>/dev/null | head -1 | cut -c1-60)
+      if [[ -n "$first_msg" ]]; then
+        summary="$first_msg..."
+      else
+        summary=$(basename "$file")
+      fi
+    fi
+    printf "%2d) %s\n" $((i + 1)) "$summary"
+  done
+
+  echo ""
+  read -p "Select conversation (1-${#files[@]}): " choice
+
+  if [[ ! "$choice" =~ ^[0-9]+$ ]] || [[ "$choice" -lt 1 ]] || [[ "$choice" -gt ${#files[@]} ]]; then
+    echo "Invalid selection"
+    exit 1
+  fi
+
+  selected="${files[$((choice - 1))]}"
+fi
+
+if [[ -z "$selected" ]]; then
+  echo "No file selected"
+  exit 1
+fi
+
+# Copy the selected file
+filename=$(basename "$selected")
+session_id="${filename%.jsonl}"
+
+# Display path (hide /private/tmp -> /tmp on macOS for cleaner output)
+display_dest_dir="${dest_dir/#\/private\/tmp//tmp}"
+
+if $dry_run; then
+  echo "cp \"$selected\" \"$dest_proj/$filename\""
+  echo ""
+  echo "Next steps:"
+  echo "  cd \"$display_dest_dir\""
+  echo "  claude --resume \"$session_id\""
+else
+  cp "$selected" "$dest_proj/$filename"
+  echo "Copied conversation to $display_dest_dir"
+  echo ""
+  echo "To resume:"
+  echo "  cd \"$display_dest_dir\""
+  echo "  claude --resume \"$session_id\""
+fi
