@@ -14,7 +14,7 @@ Resume a conversation in a different directory - perfect for when you want to co
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/claude-tools.git
+git clone https://github.com/dlond/claude-tools.git
 cd claude-tools
 
 # Add to your PATH
