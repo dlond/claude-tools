@@ -1,0 +1,6 @@
+description = ""
+requires = "str unix"
+archive(byte) = "claude_tools_lib.cma"
+archive(native) = "claude_tools_lib.cmxa"
+plugin(byte) = "claude_tools_lib.cma"
+plugin(native) = "claude_tools_lib.cmxs"

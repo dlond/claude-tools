@@ -1,0 +1,34 @@
+lib: [
+  "_build/install/default/lib/claude-tools/META"
+  "_build/install/default/lib/claude-tools/claude_tools_lib.a"
+  "_build/install/default/lib/claude-tools/claude_tools_lib.cma"
+  "_build/install/default/lib/claude-tools/claude_tools_lib.cmi"
+  "_build/install/default/lib/claude-tools/claude_tools_lib.cmt"
+  "_build/install/default/lib/claude-tools/claude_tools_lib.cmx"
+  "_build/install/default/lib/claude-tools/claude_tools_lib.cmxa"
+  "_build/install/default/lib/claude-tools/claude_tools_lib.ml"
+  "_build/install/default/lib/claude-tools/claude_tools_lib__Cvfs.cmi"
+  "_build/install/default/lib/claude-tools/claude_tools_lib__Cvfs.cmt"
+  "_build/install/default/lib/claude-tools/claude_tools_lib__Cvfs.cmti"
+  "_build/install/default/lib/claude-tools/claude_tools_lib__Cvfs.cmx"
+  "_build/install/default/lib/claude-tools/claude_tools_lib__Display.cmi"
+  "_build/install/default/lib/claude-tools/claude_tools_lib__Display.cmt"
+  "_build/install/default/lib/claude-tools/claude_tools_lib__Display.cmti"
+  "_build/install/default/lib/claude-tools/claude_tools_lib__Display.cmx"
+  "_build/install/default/lib/claude-tools/cvfs.ml"
+  "_build/install/default/lib/claude-tools/cvfs.mli"
+  "_build/install/default/lib/claude-tools/display.ml"
+  "_build/install/default/lib/claude-tools/display.mli"
+  "_build/install/default/lib/claude-tools/dune-package"
+  "_build/install/default/lib/claude-tools/opam"
+]
+libexec: [
+  "_build/install/default/lib/claude-tools/claude_tools_lib.cmxs"
+]
+bin: [
+  "_build/install/default/bin/claude-ls"
+]
+doc: [
+  "_build/install/default/doc/claude-tools/LICENSE"
+  "_build/install/default/doc/claude-tools/README.md"
+]
