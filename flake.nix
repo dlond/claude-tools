@@ -31,7 +31,7 @@
       # Define the claude-tools package
       claude-tools = pkgs.ocamlPackages.buildDunePackage rec {
         pname = "claude-tools";
-        version = "1.0.0";
+        version = "1.0.1";
 
         src = ./.;
 
