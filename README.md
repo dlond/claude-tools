@@ -19,10 +19,20 @@ This project treats Claude conversations as a virtual filesystem, providing fami
 
 ## Installation
 
-### Quick Install with Nix
+### Quick Install (Binaries)
 
 ```bash
-# Install directly from GitHub (recommended for users)
+# Install with one command
+curl -sSL https://raw.githubusercontent.com/dlond/claude-tools/main/install.sh | bash
+
+# Or download manually from releases
+# https://github.com/dlond/claude-tools/releases
+```
+
+### Install with Nix
+
+```bash
+# Install directly from GitHub
 nix profile install github:dlond/claude-tools
 
 # Or run without installing

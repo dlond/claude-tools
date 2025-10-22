@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-linux
+          - os: macos-latest
+            target: x86_64-darwin
+          - os: macos-latest
+            target: aarch64-darwin
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: cachix/install-nix-action@v24
+      with:
+        github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build binaries
+      run: |
+        nix build .#claude-tools
+        mkdir -p dist
+        cp -r result/bin/* dist/
+        tar czf claude-tools-${{ matrix.target }}.tar.gz -C dist .
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: claude-tools-${{ matrix.target }}
+        path: claude-tools-${{ matrix.target }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: artifacts/**/*.tar.gz
+        generate_release_notes: true
+        body: |
+          ## Installation
+
+          ### Download binaries
+
+          ```bash
+          # macOS (Intel)
+          curl -L https://github.com/dlond/claude-tools/releases/latest/download/claude-tools-x86_64-darwin.tar.gz | tar xz
+
+          # macOS (Apple Silicon)
+          curl -L https://github.com/dlond/claude-tools/releases/latest/download/claude-tools-aarch64-darwin.tar.gz | tar xz
+
+          # Linux
+          curl -L https://github.com/dlond/claude-tools/releases/latest/download/claude-tools-x86_64-linux.tar.gz | tar xz
+
+          # Move to PATH
+          sudo mv claude-* /usr/local/bin/
+          ```
+
+          ### Install with Nix
+
+          ```bash
+          nix profile install github:dlond/claude-tools
+          ```
