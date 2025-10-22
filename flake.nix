@@ -46,6 +46,7 @@
             ocamlPackages.yojson # JSON parsing
             ocamlPackages.cmdliner # Command-line parsing
             ocamlPackages.alcotest # Testing framework
+            ocamlPackages.uuidm # UUID generation
 
             # Development tools
             ocamlPackages.utop # REPL with completion

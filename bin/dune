@@ -3,7 +3,7 @@
  (name claude_ls)
  (libraries claude_tools_lib))
 
-; (executable
-;  (public_name claude-cp)
-;  (name claude_cp)
-;  (libraries claude_tools_lib cmdliner))
+(executable
+ (public_name claude-cp)
+ (name claude_cp)
+ (libraries claude_tools_lib unix))
