@@ -7,3 +7,18 @@
  (public_name claude-cp)
  (name claude_cp)
  (libraries claude_tools_lib unix))
+
+(executable
+ (public_name claude-rm)
+ (name claude_rm)
+ (libraries claude_tools_lib))
+
+(executable
+ (public_name claude-mv)
+ (name claude_mv)
+ (libraries claude_tools_lib))
+
+(executable
+ (public_name claude-clean)
+ (name claude_clean)
+ (libraries claude_tools_lib unix))
