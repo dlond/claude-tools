@@ -25,3 +25,18 @@ val project_path : string -> string
 
 val resolve_path : string -> string
 (** Resolve and normalize a path *)
+
+val reverse_project_path : string -> string
+(** Reverse map an encoded project directory name to original path *)
+
+val list_all_projects : unit -> (string * bool * int * float) list
+(** Get all project directories from ~/.claude/projects.
+    Returns list of (path, is_ghost, conversation_count, last_modified) *)
+
+val discover_ghosts : unit -> (string * bool * int * float) list
+(** Discover ghost directories (have conversations but directory doesn't exist).
+    Returns list of (path, is_ghost, conversation_count, last_modified) *)
+
+val get_all_sources : unit -> (string * bool * int * float) list
+(** Get all available sources (real + ghost directories with conversations).
+    Returns list of (path, is_ghost, conversation_count, last_modified) *)
