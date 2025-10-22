@@ -1,27 +1,62 @@
 # claude-tools
 
-Utilities for working with [Claude Code](https://claude.com/claude-code).
+A suite of Unix-style utilities for managing [Claude Code](https://claude.com/claude-code) conversations, implementing a Claude Virtual Filesystem (CVF) abstraction.
+
+## Project Status
+
+🚧 **Under active development** - Rewriting from Bash to OCaml for better performance and maintainability.
+
+## Philosophy
+
+This project treats Claude conversations as a virtual filesystem, enabling familiar Unix operations:
+- `claude-ls` - List conversations (like `ls`)
+- `claude-cp` - Copy conversations between projects (like `cp`)
+- `claude-search` - Search across conversations (like `grep`) *(planned)*
+- More tools following Unix philosophy...
 
 ## Available Tools
 
-### claude-cp
+### claude-ls (OCaml) ✅
 
-Copy Claude Code conversations between projects.
+List Claude conversations for a project with summaries and timestamps.
 
-Resume a conversation in a different directory - perfect for when you want to continue from a deleted git worktree, move context to a new project, or pick up where you left off somewhere else.
+```bash
+$ claude-ls ~/dev/projects/nvim
+2025-10-21 04:00  bbfdce7d  Neovim Config Codebase Exploration Warmup
+2025-10-21 03:59  ad44dec8  (No summary)
+2025-10-20 06:47  eee0bb61  Neovim Codebase Search Assistant Warmup
+```
+
+### claude-cp (Bash - being ported to OCaml)
+
+Copy Claude Code conversations between projects. Perfect for resuming work in a different directory.
 
 ## Installation
+
+### For Development (OCaml tools)
 
 ```bash
 # Clone the repo
 git clone https://github.com/dlond/claude-tools.git
 cd claude-tools
 
-# Add to your PATH
-export PATH="$PATH:$(pwd)"
+# Using Nix (recommended)
+nix develop
+dune build
 
-# Or copy individual tools to your bin
-cp claude-cp ~/bin/
+# Or using opam
+opam install dune yojson cmdliner alcotest
+dune build
+```
+
+### For Bash tools (temporary)
+
+```bash
+# Add to your PATH
+export PATH="$PATH:$(pwd)/bash"
+
+# Or copy individual tools
+cp bash/claude-cp ~/bin/
 chmod +x ~/bin/claude-cp
 ```
 
