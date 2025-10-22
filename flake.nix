@@ -27,7 +27,57 @@
       packages = import "${system-flakes}/lib/packages.nix" {
         inherit pkgs;
       };
+
+      # Define the claude-tools package
+      claude-tools = pkgs.ocamlPackages.buildDunePackage rec {
+        pname = "claude-tools";
+        version = "1.0.0";
+
+        src = ./.;
+
+        minimalOCamlVersion = "4.08";
+        duneVersion = "3";
+
+        buildInputs = with pkgs.ocamlPackages; [
+          yojson
+          cmdliner
+          uuidm
+        ];
+
+        postInstall = ''
+          # Install shell completions
+          mkdir -p $out/share/bash-completion/completions
+          mkdir -p $out/share/zsh/site-functions
+
+          if [ -f $src/completions/claude-tools.bash ]; then
+            cp $src/completions/claude-tools.bash $out/share/bash-completion/completions/claude-tools
+          fi
+
+          if [ -f $src/completions/claude-tools.zsh ]; then
+            cp $src/completions/claude-tools.zsh $out/share/zsh/site-functions/_claude-tools
+          fi
+        '';
+
+        meta = with pkgs.lib; {
+          description = "Unix-style utilities for managing Claude Code conversations";
+          homepage = "https://github.com/dlond/claude-tools";
+          license = licenses.mit;
+          maintainers = [ ];
+          platforms = platforms.unix;
+        };
+      };
     in {
+      # Package output for users to install
+      packages = {
+        default = claude-tools;
+        claude-tools = claude-tools;
+      };
+
+      # App output for direct execution
+      apps.default = flake-utils.lib.mkApp {
+        drv = claude-tools;
+        name = "claude-ls";
+      };
       devShells.default = pkgs.mkShell {
         buildInputs = with pkgs;
           [
