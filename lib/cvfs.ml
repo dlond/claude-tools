@@ -16,24 +16,33 @@ let resolve_path path =
     List.rev (List.fold_left squash_rev [] parts)
   in
 
-  (* Shortcut easy case *)
-  if path = "" || path = "." then Sys.getcwd ()
-  else if path = "~" then Sys.getenv "HOME"
-  else if path.[0] = '/' then
-    (* Absolute path *)
-    let parts = String.split_on_char '/' path |> clean_parts in
-    "/" ^ String.concat "/" parts
-  else if String.starts_with ~prefix:"~/" path then
-    (* Home directory *)
-    let rest = String.sub path 2 (String.length path - 2) in
-    let path_abs = Sys.getenv "HOME" ^ "/" ^ rest in
-    let parts = String.split_on_char '/' path_abs |> clean_parts in
-    "/" ^ String.concat "/" parts
-  else
-    (* Relative path *)
-    let path_abs = Sys.getcwd () ^ "/" ^ path in
-    let parts = String.split_on_char '/' path_abs |> clean_parts in
-    "/" ^ String.concat "/" parts
+  (* First resolve to absolute path *)
+  let abs_path =
+    if path = "" || path = "." then Sys.getcwd ()
+    else if path = "~" then Sys.getenv "HOME"
+    else if path.[0] = '/' then
+      (* Absolute path *)
+      let parts = String.split_on_char '/' path |> clean_parts in
+      "/" ^ String.concat "/" parts
+    else if String.starts_with ~prefix:"~/" path then
+      (* Home directory *)
+      let rest = String.sub path 2 (String.length path - 2) in
+      let path_abs = Sys.getenv "HOME" ^ "/" ^ rest in
+      let parts = String.split_on_char '/' path_abs |> clean_parts in
+      "/" ^ String.concat "/" parts
+    else
+      (* Relative path *)
+      let path_abs = Sys.getcwd () ^ "/" ^ path in
+      let parts = String.split_on_char '/' path_abs |> clean_parts in
+      "/" ^ String.concat "/" parts
+  in
+
+  (* Resolve symlinks using realpath *)
+  try
+    Unix.realpath abs_path
+  with _ ->
+    (* If realpath fails (e.g., path doesn't exist), return the cleaned path *)
+    abs_path
 
 let project_path path =
   path |> resolve_path |> String.map (fun c -> if c = '/' then '-' else c)
@@ -105,81 +114,87 @@ let copy_conversation source_path id dest_path =
   match find_by_id source_path id with
   | None -> Error (Printf.sprintf "Conversation '%s' not found in %s" id source_path)
   | Some conv ->
-      let source_proj = project_path source_path in
-      let dest_proj = project_path dest_path in
-      let source_file = Filename.concat source_proj (conv.id ^ ".jsonl") in
+      (* Check if destination directory exists *)
+      if not (Sys.file_exists dest_path) then
+        Error (Printf.sprintf "Error: destination directory '%s' does not exist" dest_path)
+      else if not (Sys.is_directory dest_path) then
+        Error (Printf.sprintf "Error: destination '%s' is not a directory" dest_path)
+      else
+        let source_proj = project_path source_path in
+        let dest_proj = project_path dest_path in
+        let source_file = Filename.concat source_proj (conv.id ^ ".jsonl") in
 
-      (* Generate new UUID for the copy *)
-      let new_id = Uuidm.v4_gen (Random.State.make_self_init ()) () |> Uuidm.to_string ~upper:false in
-      let dest_file = Filename.concat dest_proj (new_id ^ ".jsonl") in
+        (* Generate new UUID for the copy *)
+        let new_id = Uuidm.v4_gen (Random.State.make_self_init ()) () |> Uuidm.to_string ~upper:false in
+        let dest_file = Filename.concat dest_proj (new_id ^ ".jsonl") in
 
-      try
-        (* Create destination directory if it doesn't exist *)
-        if not (Sys.file_exists dest_proj) then (
-          (* Create parent directories if needed *)
-          let claude_dir = Sys.getenv "HOME" ^ "/.claude" in
-          let projects_dir = claude_dir ^ "/projects" in
-          if not (Sys.file_exists claude_dir) then Unix.mkdir claude_dir 0o755;
-          if not (Sys.file_exists projects_dir) then Unix.mkdir projects_dir 0o755;
-          Unix.mkdir dest_proj 0o755
-        );
+          try
+            (* Create Claude project directory if it doesn't exist *)
+            if not (Sys.file_exists dest_proj) then (
+              (* Create parent directories if needed *)
+              let claude_dir = Sys.getenv "HOME" ^ "/.claude" in
+              let projects_dir = claude_dir ^ "/projects" in
+              if not (Sys.file_exists claude_dir) then Unix.mkdir claude_dir 0o755;
+              if not (Sys.file_exists projects_dir) then Unix.mkdir projects_dir 0o755;
+              Unix.mkdir dest_proj 0o755
+            );
 
-        (* Copy the file *)
-        let ic = open_in_bin source_file in
-        let oc = open_out_bin dest_file in
-        let buffer = Bytes.create 8192 in
-        let rec copy_loop () =
-          match input ic buffer 0 8192 with
-          | 0 -> ()
-          | n ->
-              output oc buffer 0 n;
-              copy_loop ()
-        in
-        copy_loop ();
-        close_in ic;
+            (* Copy the file *)
+            let ic = open_in_bin source_file in
+            let oc = open_out_bin dest_file in
+            let buffer = Bytes.create 8192 in
+            let rec copy_loop () =
+              match input ic buffer 0 8192 with
+              | 0 -> ()
+              | n ->
+                  output oc buffer 0 n;
+                  copy_loop ()
+            in
+            copy_loop ();
+            close_in ic;
 
-        (* Append metadata about the copy operation *)
-        let metadata =
-          `Assoc [
-            ("type", `String "metadata");
-            ("tool", `String "claude-cp");
-            ("action", `String "copy");
-            ("timestamp", `String (
-              let time = Unix.gettimeofday () |> Unix.gmtime in
-              Printf.sprintf "%04d-%02d-%02dT%02d:%02d:%02dZ"
-                (time.tm_year + 1900) (time.tm_mon + 1) time.tm_mday
-                time.tm_hour time.tm_min time.tm_sec
-            ));
-            ("source_path", `String source_path);
-            ("dest_path", `String dest_path);
-            ("source_id", `String conv.id);
-            ("version", `String "1.0.0");
-          ]
-        in
-        output_string oc "\n";
-        output_string oc (Yojson.Safe.to_string metadata);
-        output_string oc "\n";
-        close_out oc;
+            (* Append metadata about the copy operation *)
+            let metadata =
+              `Assoc [
+                ("type", `String "metadata");
+                ("tool", `String "claude-cp");
+                ("action", `String "copy");
+                ("timestamp", `String (
+                  let time = Unix.gettimeofday () |> Unix.gmtime in
+                  Printf.sprintf "%04d-%02d-%02dT%02d:%02d:%02dZ"
+                    (time.tm_year + 1900) (time.tm_mon + 1) time.tm_mday
+                    time.tm_hour time.tm_min time.tm_sec
+                ));
+                ("source_path", `String source_path);
+                ("dest_path", `String dest_path);
+                ("source_id", `String conv.id);
+                ("version", `String "1.0.0");
+              ]
+            in
+            output_string oc "\n";
+            output_string oc (Yojson.Safe.to_string metadata);
+            output_string oc "\n";
+            close_out oc;
 
-        (* Update all sessionId references to the new UUID *)
-        let sed_cmd = Printf.sprintf
-          "sed -i.bak 's/\"sessionId\":\"[^\"]*\"/\"sessionId\":\"%s\"/g' %s && rm %s.bak"
-          new_id (Filename.quote dest_file) (Filename.quote dest_file) in
-        let _ = Sys.command sed_cmd in
+            (* Update all sessionId references to the new UUID *)
+            let sed_cmd = Printf.sprintf
+              "sed -i.bak 's/\"sessionId\":\"[^\"]*\"/\"sessionId\":\"%s\"/g' %s && rm %s.bak"
+              new_id (Filename.quote dest_file) (Filename.quote dest_file) in
+            let _ = Sys.command sed_cmd in
 
-        (* Set the first parentUuid to the source conversation ID for lineage tracking *)
-        let sed_first_parent = Printf.sprintf
-          "sed -i.bak '0,/\"parentUuid\":[^,]*/{s/\"parentUuid\":[^,]*/\"parentUuid\":\"%s\"/;}' %s && rm %s.bak"
-          conv.id (Filename.quote dest_file) (Filename.quote dest_file) in
-        let _ = Sys.command sed_first_parent in
+            (* Set the first parentUuid to the source conversation ID for lineage tracking *)
+            let sed_first_parent = Printf.sprintf
+              "sed -i.bak '0,/\"parentUuid\":[^,]*/{s/\"parentUuid\":[^,]*/\"parentUuid\":\"%s\"/;}' %s && rm %s.bak"
+              conv.id (Filename.quote dest_file) (Filename.quote dest_file) in
+            let _ = Sys.command sed_first_parent in
 
-        (* Preserve timestamps *)
-        let stats = Unix.stat source_file in
-        Unix.utimes dest_file stats.st_atime stats.st_mtime;
+            (* Preserve timestamps *)
+            let stats = Unix.stat source_file in
+            Unix.utimes dest_file stats.st_atime stats.st_mtime;
 
-        Ok new_id
-      with
-      | e -> Error (Printf.sprintf "Failed to copy: %s" (Printexc.to_string e))
+            Ok new_id
+          with
+          | e -> Error (Printf.sprintf "Failed to copy: %s" (Printexc.to_string e))
 
 let get_most_recent path =
   match list path with
