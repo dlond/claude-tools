@@ -62,6 +62,25 @@ let main () =
   let dry_run = List.mem "--dry-run" flags in
   let verbose = List.mem "--verbose" flags in
   let exec = List.mem "--exec" flags in
+  let complete_source = List.mem "--complete-source" flags in
+
+  (* Handle completion mode *)
+  if complete_source then (
+    let sources = get_all_sources () in
+    sources |> List.iter (fun (path, is_ghost, count, last_modified) ->
+      let ghost_marker = if is_ghost then " (ghost)" else "" in
+      let time_ago =
+        let now = Unix.time () in
+        let diff = now -. last_modified in
+        if diff < 3600.0 then Printf.sprintf "%.0f min ago" (diff /. 60.0)
+        else if diff < 86400.0 then Printf.sprintf "%.0f hours ago" (diff /. 3600.0)
+        else Printf.sprintf "%.0f days ago" (diff /. 86400.0)
+      in
+      Printf.printf "%s\t%d conversations, last: %s%s\n"
+        path count time_ago ghost_marker
+    );
+    exit 0
+  );
 
   (* Determine mode and arguments *)
   let mode, source, dest = match positional with

@@ -200,3 +200,42 @@ let get_most_recent path =
   match list path with
   | [] -> None
   | h :: _ -> Some h  (* list is already sorted by timestamp, newest first *)
+
+(* Reverse map an encoded project directory name to original path *)
+let reverse_project_path encoded_name =
+  encoded_name |> String.map (fun c -> if c = '-' then '/' else c)
+
+(* Get all project directories from ~/.claude/projects *)
+let list_all_projects () =
+  let projects_dir = Sys.getenv "HOME" ^ "/.claude/projects" in
+  if not (Sys.file_exists projects_dir) then []
+  else
+    Sys.readdir projects_dir
+    |> Array.to_list
+    |> List.filter (fun name ->
+      (* Filter out non-directory entries if any *)
+      let full_path = Filename.concat projects_dir name in
+      Sys.is_directory full_path
+    )
+    |> List.map (fun encoded ->
+      let path = reverse_project_path encoded in
+      let is_ghost = not (Sys.file_exists path) in
+      let conversations = list path in
+      let conversation_count = List.length conversations in
+      let last_modified =
+        match conversations with
+        | [] -> 0.0
+        | h :: _ -> h.timestamp
+      in
+      (path, is_ghost, conversation_count, last_modified)
+    )
+
+(* Discover ghost directories (have conversations but directory doesn't exist) *)
+let discover_ghosts () =
+  list_all_projects ()
+  |> List.filter (fun (_, is_ghost, count, _) -> is_ghost && count > 0)
+
+(* Get all available sources (real + ghost directories) *)
+let get_all_sources () =
+  list_all_projects ()
+  |> List.filter (fun (_, _, count, _) -> count > 0)
