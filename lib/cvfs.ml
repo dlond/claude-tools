@@ -39,6 +39,27 @@ let project_path path =
   path |> resolve_path |> String.map (fun c -> if c = '/' then '-' else c)
   |> fun dir -> Sys.getenv "HOME" ^ "/.claude/projects/" ^ dir
 
+let get_session_summary filepath =
+  try
+    let ic = open_in filepath in
+    let rec scan_lines summaries =
+      try
+        let line = input_line ic in
+        let json = Yojson.Safe.from_string line in
+        match Yojson.Safe.Util.(member "type" json |> to_string_option) with
+        | Some "summary" ->
+            Yojson.Safe.Util.(member "summary" json |> to_string) :: summaries
+            |> scan_lines
+        | _ -> scan_lines summaries
+      with
+      | End_of_file ->
+          close_in ic;
+          summaries
+      | _ -> scan_lines summaries
+    in
+    [] |> scan_lines
+  with _ -> [ "(Error reading file)" ]
+
 let list ?show_all:(_ = false) path =
   let proj = project_path path in
   (* Check if directory exists *)
@@ -57,8 +78,15 @@ let list ?show_all:(_ = false) path =
           let stats = Unix.stat filepath in
           {
             id;
-            summary = "(No summary yet)";
-            (* We'll add parsing next *)
+            summary =
+              (match get_session_summary filepath with
+              | [] -> "(No summary)"
+              | summaries -> summaries |> List.rev |> List.hd);
+            (* summary = *)
+            (*   (match get_session_summary filepath with *)
+            (*   | [] -> "(No summaries found)" *)
+            (*   | [ s ] -> s *)
+            (*   | ls -> String.concat " -> " ls); *)
             timestamp = stats.Unix.st_mtime;
             path;
           })

@@ -1,4 +1,4 @@
 (library
  (public_name claude-tools)
  (name claude_tools_lib)
- (libraries unix str))
+ (libraries unix str yojson))

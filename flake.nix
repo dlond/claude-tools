@@ -42,6 +42,11 @@
             ocamlPackages.async
             ocamlPackages.ppx_jane
 
+            # Libraries for claude-tools
+            ocamlPackages.yojson # JSON parsing
+            ocamlPackages.cmdliner # Command-line parsing
+            ocamlPackages.alcotest # Testing framework
+
             # Development tools
             ocamlPackages.utop # REPL with completion
             ocamlPackages.ocaml-lsp # LSP for neovim
