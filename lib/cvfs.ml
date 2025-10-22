@@ -182,12 +182,6 @@ let copy_conversation source_path id dest_path =
               new_id (Filename.quote dest_file) (Filename.quote dest_file) in
             let _ = Sys.command sed_cmd in
 
-            (* Set the first parentUuid to the source conversation ID for lineage tracking *)
-            let sed_first_parent = Printf.sprintf
-              "sed -i.bak '0,/\"parentUuid\":[^,]*/{s/\"parentUuid\":[^,]*/\"parentUuid\":\"%s\"/;}' %s && rm %s.bak"
-              conv.id (Filename.quote dest_file) (Filename.quote dest_file) in
-            let _ = Sys.command sed_first_parent in
-
             (* Preserve timestamps *)
             let stats = Unix.stat source_file in
             Unix.utimes dest_file stats.st_atime stats.st_mtime;
