@@ -140,13 +140,12 @@ claude-cp ~/source ~/dest --exec       # Launch Claude after copying
 - Generates new UUID for each copy (creates independent fork)
 - Updates all sessionId fields to match new UUID
 - Adds metadata logging for audit trail
-- Tracks lineage via parentUuid field
 - Supports ghost directories as source
 
 **Piping examples:**
 ```bash
 # Copy from ghost directory after deleting worktree
-gwt done
+git worktree remove .
 claude-cp ../deleted-worktree ~/new-project
 
 # Copy most recent from each project to archive
@@ -241,29 +240,36 @@ A unique feature of claude-tools is support for "ghost directories" - directorie
 
 ```bash
 # Create worktree and work on feature
-gwt new feature-xyz
+git worktree add ~/dev/worktrees/project/feature-xyz
 cd ~/dev/worktrees/project/feature-xyz
 # ... work with Claude ...
 
 # Delete worktree but conversations remain
-gwt done
+git worktree remove .
 
 # Later, in a new worktree, copy from the ghost
-gwt new another-feature
+git worktree add ~/dev/worktrees/project/another-feature
+cd ~/dev/worktrees/project/another-feature
 claude-cp ../feature-xyz .  # Works even though directory is gone!
 ```
 
 Tab completion will show ghost directories marked with "(ghost)":
 ```bash
 $ claude-cp <TAB>
-../feature-xyz     (ghost) 3 conversations, last: 2 hours ago
-~/dev/project      17 conversations, last: today
+/Users/you/dev/worktrees/feature-xyz (ghost)  3 conversations, last: 2 hours ago
+/Users/you/dev/project                        17 conversations, last: today
 ```
 
 ## Metadata Logging
 
-All mutation operations (cp, mv) append metadata to conversation files:
+All mutation operations (cp, mv) append metadata to conversation files.
 
+**UUID Handling in `claude-cp`:**
+- A new UUID is generated for the copied conversation
+- All `sessionId` fields throughout the conversation are updated to this new UUID
+- The original UUID is preserved in the metadata's `source_id` field for lineage tracking
+
+**Metadata Format:**
 ```json
 {
   "type": "metadata",
@@ -304,10 +310,11 @@ Example git aliases for your `.gitconfig`:
 ### Continuing work in a new worktree
 ```bash
 # Finish feature branch
-gwt done
+git worktree remove .
 
 # Start new branch with context
-gwt new bugfix
+git worktree add ../bugfix
+cd ../bugfix
 claude-cp ../feature-branch .
 ```
 
