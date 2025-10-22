@@ -355,27 +355,17 @@ Conversations are stored in `~/.claude/projects/` with paths encoded as:
 
 ## Contributing
 
-Issues and pull requests are welcome! See open issues for planned features.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
-### Development
+Check the [issues](https://github.com/dlond/claude-tools/issues) for planned features and bugs.
 
-```bash
-# Run tests
-dune test
+### Roadmap
 
-# Build and test a specific tool
-dune exec bin/claude_ls.exe ~/dev/project
-
-# Format code
-dune fmt
-```
-
-### Planned Features
-
-- `claude-search` - Search across all conversations
+- `claude-search` - Full-text search across conversations
 - Color output support
-- Export to markdown
+- Export to markdown format
 - Conversation merging
+- Linux and Intel Mac binaries (CI improvement)
 
 ## License
 
