@@ -19,18 +19,38 @@ let () =
     exit 0
   );
 
-  (* Simple argument parsing for now *)
-  let path = if Array.length Sys.argv > 1 then Sys.argv.(1) else "." in
+  (* Get all path arguments (or current directory if none) *)
+  let paths =
+    if Array.length Sys.argv > 1 then
+      Array.sub Sys.argv 1 (Array.length Sys.argv - 1) |> Array.to_list
+    else
+      ["."]
+  in
 
-  try
-    let conversations = Cvfs.list path in
-    if conversations = [] then
-      Printf.printf "No conversations found in %s\n" path
-    else Display.print_short conversations
-  with
-  | Sys_error msg ->
-      Printf.eprintf "Error: %s\n" msg;
-      exit 1
-  | e ->
-      Printf.eprintf "Unexpected error: %s\n" (Printexc.to_string e);
-      exit 1
+  (* Process each path *)
+  let show_headers = List.length paths > 1 in
+  let had_output = ref false in
+
+  paths |> List.iter (fun path ->
+    try
+      (* Print directory header if multiple paths *)
+      if show_headers then (
+        if !had_output then print_newline ();
+        Printf.printf "%s:\n" path
+      );
+
+      let conversations = Cvfs.list path in
+      if conversations = [] then
+        Printf.printf "No conversations found in %s\n" path
+      else (
+        Display.print_short conversations;
+        had_output := true
+      )
+    with
+    | Sys_error msg ->
+        Printf.eprintf "Error reading %s: %s\n" path msg;
+        had_output := true
+    | e ->
+        Printf.eprintf "Error reading %s: %s\n" path (Printexc.to_string e);
+        had_output := true
+  )
