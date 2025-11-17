@@ -366,6 +366,12 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for developmen
 
 Check the [issues](https://github.com/dlond/claude-tools/issues) for planned features and bugs.
 
+## Support/Feedback ❤️
+
+I will gladly attend to comments or queries at https://discord.gg/f23d5CX5
+
+I'll keep this running as long as it is managable for me, after that I'll have to resort to official GitHub channels.
+
 ### Roadmap
 
 - `claude-search` - Full-text search across conversations
