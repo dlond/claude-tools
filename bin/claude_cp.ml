@@ -14,6 +14,28 @@ let print_conversation_list conversations =
       time.tm_hour time.tm_min time.tm_sec
       conv.summary)
 
+let print_help () =
+  Printf.printf "Usage: claude-cp SOURCE DEST [ID | --]\n";
+  Printf.printf "Copy Claude Code conversations between project directories.\n\n";
+  Printf.printf "Arguments:\n";
+  Printf.printf "  SOURCE              Source project directory\n";
+  Printf.printf "  DEST                Destination project directory\n";
+  Printf.printf "  ID                  Specific conversation ID to copy (optional)\n";
+  Printf.printf "  --                  List available conversations instead of copying\n\n";
+  Printf.printf "If no ID is provided, copies the most recent conversation or reads ID from stdin.\n\n";
+  Printf.printf "Options:\n";
+  Printf.printf "  -h, --help          Show this help message and exit\n";
+  Printf.printf "  --dry-run           Show what would be done without doing it\n";
+  Printf.printf "  --verbose           Show detailed output\n";
+  Printf.printf "  --exec              Launch Claude after copying\n";
+  Printf.printf "  --complete-source   Print completion-friendly output for sources\n\n";
+  Printf.printf "Examples:\n";
+  Printf.printf "  claude-cp ~/proj1 ~/proj2                    # Copy most recent\n";
+  Printf.printf "  claude-cp ~/proj1 ~/proj2 abc123             # Copy specific conversation\n";
+  Printf.printf "  claude-cp ~/proj1 ~/proj2 --                 # List available conversations\n";
+  Printf.printf "  claude-cp ~/proj1 ~/proj2 --dry-run          # Preview the copy operation\n";
+  Printf.printf "  claude-cp ~/proj1 ~/proj2 --exec             # Copy and launch Claude\n"
+
 let copy_with_id source dest id dry_run verbose exec =
   if verbose && not dry_run then
     Printf.eprintf "Copying conversation '%s' from %s to %s\n" id source dest;
@@ -59,6 +81,13 @@ let main () =
   in
 
   let flags, positional = parse_args [] [] args in
+
+  (* Check for help flag *)
+  if List.mem "--help" flags || List.mem "-h" flags then (
+    print_help ();
+    exit 0
+  );
+
   let dry_run = List.mem "--dry-run" flags in
   let verbose = List.mem "--verbose" flags in
   let exec = List.mem "--exec" flags in

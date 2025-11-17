@@ -1,6 +1,25 @@
 open Claude_tools_lib
 
+let print_help () =
+  Printf.printf "Usage: claude-ls [PATH]...\n";
+  Printf.printf "List Claude Code conversations in project directories.\n\n";
+  Printf.printf "If no PATH is specified, lists conversations in the current directory.\n";
+  Printf.printf "If multiple PATHs are specified, lists conversations in each directory.\n\n";
+  Printf.printf "Options:\n";
+  Printf.printf "  -h, --help      Show this help message and exit\n";
+  Printf.printf "  --complete      Print completion-friendly output\n\n";
+  Printf.printf "Examples:\n";
+  Printf.printf "  claude-ls                    # List conversations in current directory\n";
+  Printf.printf "  claude-ls ~/project          # List conversations in specific directory\n";
+  Printf.printf "  claude-ls ~/proj1 ~/proj2    # List conversations in multiple directories\n"
+
 let () =
+  (* Check for help flag *)
+  if Array.length Sys.argv > 1 && (Sys.argv.(1) = "--help" || Sys.argv.(1) = "-h") then (
+    print_help ();
+    exit 0
+  );
+
   (* Check for completion mode *)
   if Array.length Sys.argv > 1 && Sys.argv.(1) = "--complete" then (
     let sources = Cvfs.get_all_sources () in
