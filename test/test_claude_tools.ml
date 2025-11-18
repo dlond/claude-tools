@@ -104,6 +104,43 @@ let test_project_path () =
 
   Printf.printf "  (Manual verification needed - depends on system state)\n"
 
+let test_help_output () =
+  Printf.printf "\nTesting --help output for all tools:\n";
+  let tools = ["claude_ls"; "claude_cp"; "claude_mv"; "claude_rm"; "claude_clean"] in
+  let failed = ref false in
+
+  (* Sanity check: invalid usage should fail *)
+  let sanity_exe = "../bin/claude_cp.exe" in
+  let sanity_exit = Sys.command (sanity_exe ^ " --not-a-real-flag >/dev/null 2>&1") in
+  if sanity_exit = 0 then begin
+    Printf.printf "  ✗ Sanity check failed: invalid usage returned 0\n";
+    failed := true
+  end else
+    Printf.printf "  ✓ Sanity check: invalid usage fails correctly\n";
+
+  List.iter (fun tool ->
+    (* Binary path relative to where test runs (_build/default/test/) *)
+    let exe = "../bin/" ^ tool ^ ".exe" in
+    try
+      let exit_code = Sys.command (exe ^ " --help >/dev/null 2>&1") in
+      if exit_code = 0 then
+        Printf.printf "  ✓ %s\n" tool
+      else begin
+        Printf.printf "  ✗ %s --help returned exit code %d\n" tool exit_code;
+        failed := true
+      end
+    with e ->
+      Printf.printf "  ✗ %s (exception: %s)\n" tool (Printexc.to_string e);
+      failed := true
+  ) tools;
+
+  if !failed then begin
+    Printf.printf "\n✗ Some help tests failed\n";
+    exit 1
+  end else
+    Printf.printf "  All tools have working --help\n"
+
 let () =
   test_resolve_path ();
-  test_project_path ()
+  test_project_path ();
+  test_help_output ()

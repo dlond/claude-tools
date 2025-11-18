@@ -1,3 +1,9 @@
 (test
  (name test_claude_tools)
- (libraries claude_tools_lib))
+ (libraries claude_tools_lib)
+ (deps
+  ../bin/claude_ls.exe
+  ../bin/claude_cp.exe
+  ../bin/claude_mv.exe
+  ../bin/claude_rm.exe
+  ../bin/claude_clean.exe))
