@@ -8,14 +8,14 @@ This project treats Claude conversations as a virtual filesystem, providing fami
 
 ## Available Tools
 
-| Tool | Purpose | Status |
-|------|---------|--------|
-| `claude-ls` | List conversations | ✅ Complete |
-| `claude-cp` | Copy conversations (creates forks) | ✅ Complete |
-| `claude-mv` | Move conversations (preserves UUID) | ✅ Complete |
-| `claude-rm` | Remove conversations | ✅ Complete |
-| `claude-clean` | Clean up orphaned projects | ✅ Complete |
-| `claude-search` | Search across conversations | 📋 Planned |
+| Tool            | Purpose                             | Status      |
+| --------------- | ----------------------------------- | ----------- |
+| `claude-ls`     | List conversations                  | ✅ Complete |
+| `claude-cp`     | Copy conversations (creates forks)  | ✅ Complete |
+| `claude-mv`     | Move conversations (preserves UUID) | ✅ Complete |
+| `claude-rm`     | Remove conversations                | ✅ Complete |
+| `claude-clean`  | Clean up orphaned projects          | ✅ Complete |
+| `claude-search` | Search across conversations         | 📋 Planned  |
 
 ## Installation
 
@@ -28,6 +28,18 @@ curl -sSL https://raw.githubusercontent.com/dlond/claude-tools/main/install.sh |
 # Or download manually from releases
 # https://github.com/dlond/claude-tools/releases
 ```
+
+### Homebrew (Huge thanks to [Rob Taylor](https://github.com/robtaylor)!)
+
+```bash
+# Add Rob Taylor's tap
+brew tap robtaylor/homebrew-claude-tools
+
+# Install the formula
+brew install claude-tools
+```
+
+Further information at [homebrew-claude-tools](https://github.com/robtaylor/homebrew-claude-tools)
 
 ### Install with Nix
 
@@ -108,6 +120,7 @@ claude-ls --complete
 ```
 
 **Features:**
+
 - Shows conversation ID, timestamp, and summary
 - Supports multiple directories and glob patterns
 - Works with ghost directories (deleted but with stored conversations)
@@ -137,12 +150,14 @@ claude-cp ~/source ~/dest --exec       # Launch Claude after copying
 ```
 
 **Features:**
+
 - Generates new UUID for each copy (creates independent fork)
 - Updates all sessionId fields to match new UUID
 - Adds metadata logging for audit trail
 - Supports ghost directories as source
 
 **Piping examples:**
+
 ```bash
 # Copy from ghost directory after deleting worktree
 git worktree remove .
@@ -170,6 +185,7 @@ claude-mv ~/old-project ~/new-project -
 ```
 
 **Features:**
+
 - Preserves original UUID (true move, not copy)
 - Adds metadata logging for move operation
 - Atomic operation using rename
@@ -212,12 +228,14 @@ claude-clean --verbose
 ```
 
 **Features:**
+
 - Safe by default (requires --execute to actually remove)
 - Shows disk space to be reclaimed
 - Identifies empty projects and stale projects
 - Configurable age threshold
 
 **Example output:**
+
 ```
 Would remove 5 projects:
 
@@ -254,6 +272,7 @@ claude-cp ../feature-xyz .  # Works even though directory is gone!
 ```
 
 Tab completion will show ghost directories marked with "(ghost)":
+
 ```bash
 $ claude-cp <TAB>
 /Users/you/dev/worktrees/feature-xyz (ghost)  3 conversations, last: 2 hours ago
@@ -265,11 +284,13 @@ $ claude-cp <TAB>
 All mutation operations (cp, mv) append metadata to conversation files.
 
 **UUID Handling in `claude-cp`:**
+
 - A new UUID is generated for the copied conversation
 - All `sessionId` fields throughout the conversation are updated to this new UUID
 - The original UUID is preserved in the metadata's `source_id` field for lineage tracking
 
 **Metadata Format:**
+
 ```json
 {
   "type": "metadata",
@@ -308,6 +329,7 @@ Example git aliases for your `.gitconfig`:
 ## Common Workflows
 
 ### Continuing work in a new worktree
+
 ```bash
 # Finish feature branch
 git worktree remove .
@@ -319,6 +341,7 @@ claude-cp ../feature-branch .
 ```
 
 ### Backing up conversations
+
 ```bash
 # Backup all projects to archive
 for dir in ~/dev/projects/*; do
@@ -327,6 +350,7 @@ done
 ```
 
 ### Finding old conversations
+
 ```bash
 # List all ghost directories
 claude-cp --complete-source | grep "(ghost)"
@@ -336,6 +360,7 @@ claude-ls ~/dev/old-project-*
 ```
 
 ### Cleaning up disk space
+
 ```bash
 # See what can be cleaned
 claude-clean
@@ -357,6 +382,7 @@ claude-tools implements a Claude Virtual Filesystem (CVF) abstraction layer that
 4. **UUID Management**: Handles conversation identity (fork vs move)
 
 Conversations are stored in `~/.claude/projects/` with paths encoded as:
+
 - `/Users/alice/dev/project` → `~/.claude/projects/-Users-alice-dev-project/`
 - `/tmp/test` → `~/.claude/projects/-private-tmp-test/` (on macOS with symlink resolution)
 
