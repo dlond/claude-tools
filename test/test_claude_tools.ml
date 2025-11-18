@@ -106,17 +106,42 @@ let test_project_path () =
 
 let test_help_output () =
   Printf.printf "\nTesting --help output for all tools:\n";
-  let tools = ["claude_ls"; "claude_cp"; "claude_mv"; "claude_rm"; "claude_clean"] in
+
+  (* Discover all .exe files in ../bin/ *)
+  let bin_dir = "../bin" in
+  let tools =
+    if Sys.file_exists bin_dir && Sys.is_directory bin_dir then
+      Sys.readdir bin_dir
+      |> Array.to_list
+      |> List.filter (fun name -> Filename.check_suffix name ".exe")
+      |> List.map (fun name -> Filename.chop_suffix name ".exe")
+      |> List.sort String.compare
+    else begin
+      Printf.printf "  ✗ bin directory not found at %s\n" bin_dir;
+      []
+    end
+  in
+
+  if tools = [] then begin
+    Printf.printf "  ✗ No executables found!\n";
+    exit 1
+  end;
+
+  Printf.printf "  Found %d tool(s): %s\n"
+    (List.length tools) (String.concat ", " tools);
+
   let failed = ref false in
 
-  (* Sanity check: invalid usage should fail *)
+  (* Sanity check: invalid usage should fail (test with first tool that has cmdliner) *)
   let sanity_exe = "../bin/claude_cp.exe" in
-  let sanity_exit = Sys.command (sanity_exe ^ " --not-a-real-flag >/dev/null 2>&1") in
-  if sanity_exit = 0 then begin
-    Printf.printf "  ✗ Sanity check failed: invalid usage returned 0\n";
-    failed := true
-  end else
-    Printf.printf "  ✓ Sanity check: invalid usage fails correctly\n";
+  if Sys.file_exists sanity_exe then (
+    let sanity_exit = Sys.command (sanity_exe ^ " --not-a-real-flag >/dev/null 2>&1") in
+    if sanity_exit = 0 then begin
+      Printf.printf "  ✗ Sanity check failed: invalid usage returned 0\n";
+      failed := true
+    end else
+      Printf.printf "  ✓ Sanity check: invalid usage fails correctly\n"
+  );
 
   List.iter (fun tool ->
     (* Binary path relative to where test runs (_build/default/test/) *)

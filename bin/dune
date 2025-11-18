@@ -6,7 +6,7 @@
 (executable
  (public_name claude-cp)
  (name claude_cp)
- (libraries claude_tools_lib unix))
+ (libraries claude_tools_lib unix cmdliner))
 
 (executable
  (public_name claude-rm)
