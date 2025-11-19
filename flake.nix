@@ -68,7 +68,7 @@
 
             # Generate .opam file from dune-project (doesn't need dependencies)
             eval $(opam env)
-            dune build myproject.opam
+            dune build claude-tools.opam
             echo ""
 
             echo "Install dependencies:"
