@@ -14,7 +14,12 @@ depends: [
   "dune" {>= "3.20"}
   "yojson"
   "cmdliner"
-  "alcotest"
+  "uuidm"
+  "alcotest" {with-test}
+  "ocaml-lsp-server" {with-dev-setup}
+  "merlin" {with-dev-setup}
+  "ocamlformat" {with-dev-setup}
+  "utop" {with-dev-setup}
   "odoc" {with-doc}
 ]
 build: [
