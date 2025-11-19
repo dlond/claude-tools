@@ -13,6 +13,24 @@ let format_age timestamp =
   else if days = 1 then "1 day ago"
   else Printf.sprintf "%d days ago" days
 
+let print_help () =
+  Printf.printf "Usage: claude-clean [OPTIONS]\n";
+  Printf.printf "Clean up orphaned Claude Code project directories.\n\n";
+  Printf.printf "By default, runs in dry-run mode (shows what would be removed).\n";
+  Printf.printf "Use --execute to actually remove the orphaned projects.\n\n";
+  Printf.printf "Options:\n";
+  Printf.printf "  -h, --help          Show this help message and exit\n";
+  Printf.printf "  --execute           Actually remove orphaned projects (default: dry-run)\n";
+  Printf.printf "  --empty-only        Only process empty projects (0 conversations)\n";
+  Printf.printf "  --verbose           Show detailed output including size and timestamps\n";
+  Printf.printf "  --days=N            Only consider projects N+ days old (default: 30)\n\n";
+  Printf.printf "Examples:\n";
+  Printf.printf "  claude-clean                      # Preview what would be removed\n";
+  Printf.printf "  claude-clean --execute            # Actually remove orphaned projects\n";
+  Printf.printf "  claude-clean --empty-only         # Preview empty projects only\n";
+  Printf.printf "  claude-clean --days=60 --execute  # Remove projects 60+ days old\n";
+  Printf.printf "  claude-clean --verbose            # Show detailed information\n"
+
 let main () =
   let args = Array.to_list Sys.argv |> List.tl in
 
@@ -25,6 +43,13 @@ let main () =
   in
 
   let flags, _positional = parse_flags [] args in
+
+  (* Check for help flag *)
+  if List.mem "--help" flags || List.mem "-h" flags then (
+    print_help ();
+    exit 0
+  );
+
   let dry_run = not (List.mem "--execute" flags) in  (* Default to dry-run *)
   let empty_only = List.mem "--empty-only" flags in
   let verbose = List.mem "--verbose" flags in

@@ -1,9 +1,6 @@
 open Claude_tools_lib.Cvfs
 
-type mode =
-  | Copy of string option  (* Copy mode with optional ID *)
-  | List                   (* List available conversations *)
-
+(* Print conversation list for -- mode *)
 let print_conversation_list conversations =
   conversations
   |> List.iter (fun conv ->
@@ -14,7 +11,8 @@ let print_conversation_list conversations =
       time.tm_hour time.tm_min time.tm_sec
       conv.summary)
 
-let copy_with_id source dest id dry_run verbose exec =
+(* Copy a specific conversation *)
+let copy_with_id source dest id dry_run verbose exec_after =
   if verbose && not dry_run then
     Printf.eprintf "Copying conversation '%s' from %s to %s\n" id source dest;
 
@@ -37,34 +35,16 @@ let copy_with_id source dest id dry_run verbose exec =
   | Ok conv_id ->
       print_endline conv_id;
 
-      if exec then (
+      if exec_after then (
         let dest_abs = resolve_path dest in
         let cmd = Printf.sprintf "cd %s && claude --resume %s"
           (Filename.quote dest_abs) conv_id in
         exit (Sys.command cmd)
-      );
-      exit 0
+      )
 
-let main () =
-  let args = Array.to_list Sys.argv |> List.tl in
-
-  (* Parse flags and positional args *)
-  let rec parse_args flags pos = function
-    | [] -> (flags, List.rev pos)
-    | "--" :: rest -> (flags, List.rev pos @ ["--"] @ rest)  (* -- is special *)
-    | arg :: rest when String.starts_with ~prefix:"--" arg ->
-        parse_args (arg :: flags) pos rest
-    | arg :: rest ->
-        parse_args flags (arg :: pos) rest
-  in
-
-  let flags, positional = parse_args [] [] args in
-  let dry_run = List.mem "--dry-run" flags in
-  let verbose = List.mem "--verbose" flags in
-  let exec = List.mem "--exec" flags in
-  let complete_source = List.mem "--complete-source" flags in
-
-  (* Handle completion mode *)
+(* Main copy logic *)
+let run source dest id_or_list dry_run verbose exec_after complete_source =
+  (* Handle completion mode first *)
   if complete_source then (
     let sources = get_all_sources () in
     sources |> List.iter (fun (path, is_ghost, count, last_modified) ->
@@ -82,25 +62,9 @@ let main () =
     exit 0
   );
 
-  (* Determine mode and arguments *)
-  let mode, source, dest = match positional with
-    | [source; dest; "--"] -> (List, source, dest)
-    | [source; dest; id] -> (Copy (Some id), source, dest)
-    | [source; dest] -> (Copy None, source, dest)
-    | _ ->
-        Printf.eprintf "Usage: claude-cp SOURCE DEST [ID | --]\n";
-        Printf.eprintf "       claude-cp SOURCE DEST        # Copy most recent\n";
-        Printf.eprintf "       claude-cp SOURCE DEST ID     # Copy specific conversation\n";
-        Printf.eprintf "       claude-cp SOURCE DEST --     # List available conversations\n";
-        Printf.eprintf "\nFlags:\n";
-        Printf.eprintf "  --dry-run   Show what would be done without doing it\n";
-        Printf.eprintf "  --verbose   Show detailed output\n";
-        Printf.eprintf "  --exec      Launch Claude after copying\n";
-        exit 1
-  in
-
-  match mode with
-  | List ->
+  (* Check if in list mode *)
+  match id_or_list with
+  | Some "--" ->
       let conversations = list source in
       if conversations = [] then (
         Printf.eprintf "No conversations found in %s\n" source;
@@ -108,37 +72,93 @@ let main () =
       );
       print_conversation_list conversations
 
-  | Copy id_opt ->
-      (* Determine which conversation to copy *)
-      let id_to_copy = match id_opt with
-        | Some id -> id
-        | None ->
-            (* Try to read from stdin if it's not a tty OR if select shows data *)
-            let try_stdin =
-              if not (Unix.isatty Unix.stdin) then
-                (* Not a tty - might be piped, but also might be empty *)
-                try
-                  let id = input_line stdin |> String.trim in
-                  if id = "" then None else Some id
-                with End_of_file -> None
-              else
-                None
-            in
+  | Some id ->
+      (* Copy specific ID *)
+      copy_with_id source dest id dry_run verbose exec_after
 
-            match try_stdin with
-            | Some id -> id
-            | None ->
-                (* No stdin data, use most recent *)
-                match get_most_recent source with
-                | None ->
-                    Printf.eprintf "Error: No conversations found in %s\n" source;
-                    exit 1
-                | Some conv ->
-                    if verbose then
-                      Printf.eprintf "Using most recent conversation: %s\n" conv.id;
-                    conv.id
+  | None ->
+      (* Try to read from stdin, or use most recent *)
+      let id_to_copy =
+        if not (Unix.isatty Unix.stdin) then
+          (* Not a tty - might be piped *)
+          try
+            let id = input_line stdin |> String.trim in
+            if id = "" then None else Some id
+          with End_of_file -> None
+        else
+          None
       in
 
-      copy_with_id source dest id_to_copy dry_run verbose exec
+      match id_to_copy with
+      | Some id ->
+          copy_with_id source dest id dry_run verbose exec_after
+      | None ->
+          (* No stdin data, use most recent *)
+          match get_most_recent source with
+          | None ->
+              Printf.eprintf "Error: No conversations found in %s\n" source;
+              exit 1
+          | Some conv ->
+              if verbose then
+                Printf.eprintf "Using most recent conversation: %s\n" conv.id;
+              copy_with_id source dest conv.id dry_run verbose exec_after
 
-let () = main ()
+(* Cmdliner argument definitions *)
+open Cmdliner
+
+let source_arg =
+  let doc = "Source project directory" in
+  Arg.(required & pos 0 (some string) None & info [] ~docv:"SOURCE" ~doc)
+
+let dest_arg =
+  let doc = "Destination project directory" in
+  Arg.(required & pos 1 (some string) None & info [] ~docv:"DEST" ~doc)
+
+let id_arg =
+  let doc = "Conversation ID to copy, or '--' to list available conversations. \
+             If not provided, copies the most recent conversation or reads ID from stdin." in
+  Arg.(value & pos 2 (some string) None & info [] ~docv:"ID | --" ~doc)
+
+let dry_run_flag =
+  let doc = "Show what would be done without doing it" in
+  Arg.(value & flag & info ["dry-run"] ~doc)
+
+let verbose_flag =
+  let doc = "Show detailed output" in
+  Arg.(value & flag & info ["v"; "verbose"] ~doc)
+
+let exec_flag =
+  let doc = "Launch Claude after copying" in
+  Arg.(value & flag & info ["exec"] ~doc)
+
+let complete_source_flag =
+  let doc = "Print completion-friendly output for sources (internal use)" in
+  Arg.(value & flag & info ["complete-source"] ~doc)
+
+let cmd =
+  let doc = "copy Claude Code conversations between projects" in
+  let man = [
+    `S Manpage.s_description;
+    `P "Copy Claude Code conversation files between project directories. \
+        Creates a new conversation with a fresh UUID while preserving the content.";
+    `P "If no ID is specified, copies the most recent conversation from the source. \
+        Can also read conversation ID from stdin for use in pipes.";
+    `S Manpage.s_examples;
+    `P "Copy most recent conversation:";
+    `Pre "  $(mname) ~/proj1 ~/proj2";
+    `P "Copy specific conversation by ID:";
+    `Pre "  $(mname) ~/proj1 ~/proj2 abc123";
+    `P "List available conversations:";
+    `Pre "  $(mname) ~/proj1 ~/proj2 --";
+    `P "Preview without copying:";
+    `Pre "  $(mname) ~/proj1 ~/proj2 --dry-run";
+    `P "Copy and launch Claude:";
+    `Pre "  $(mname) ~/proj1 ~/proj2 --exec";
+    `P "Pipe with claude-ls:";
+    `Pre "  claude-ls ~/proj1 | head -1 | cut -f1 | $(mname) ~/proj1 ~/proj2";
+  ] in
+  let info = Cmd.info "claude-cp" ~version:"1.0.1" ~doc ~man in
+  Cmd.v info Term.(const run $ source_arg $ dest_arg $ id_arg $
+                   dry_run_flag $ verbose_flag $ exec_flag $ complete_source_flag)
+
+let () = exit (Cmd.eval cmd)

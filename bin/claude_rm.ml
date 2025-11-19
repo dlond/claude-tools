@@ -1,7 +1,26 @@
 open Claude_tools_lib.Cvfs
 
+let print_help () =
+  Printf.printf "Usage: claude-rm PATH ID\n";
+  Printf.printf "Remove Claude Code conversations from a project directory.\n\n";
+  Printf.printf "Arguments:\n";
+  Printf.printf "  PATH                Project directory path\n";
+  Printf.printf "  ID                  Conversation ID to remove\n";
+  Printf.printf "                      Use '-' to remove the most recent conversation\n\n";
+  Printf.printf "Options:\n";
+  Printf.printf "  -h, --help          Show this help message and exit\n\n";
+  Printf.printf "Examples:\n";
+  Printf.printf "  claude-rm ~/project abc123    # Remove specific conversation\n";
+  Printf.printf "  claude-rm ~/project -         # Remove most recent conversation\n"
+
 let main () =
   let args = Array.to_list Sys.argv |> List.tl in
+
+  (* Check for help flag *)
+  if List.mem "--help" args || List.mem "-h" args then (
+    print_help ();
+    exit 0
+  );
 
   match args with
   | [path; id] ->
