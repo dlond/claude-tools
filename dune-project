@@ -11,7 +11,7 @@
 
 (maintainers "Maintainer D <dlond@me.com>")
 
-(license LICENSE)
+(license "MIT")
 
 (documentation https://url/to/documentation)
 

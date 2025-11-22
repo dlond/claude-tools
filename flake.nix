@@ -1,5 +1,5 @@
 {
-  description = "OCaml development environment from dlond/system-flakes#ocaml";
+  description = "OCaml development environment for claude-tools";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -17,31 +17,19 @@
         config.allowUnfree = true;
       };
 
+      # More useful stuff here I guess
       config = {
-        name = "claude-tools";
+        name = "OCaml Development";
         withTest = true;
-        withDevSetup = true;
       };
 
       packages = with pkgs; [
-        dune_3
-        ocaml
         opam
+
+        gnumake
+        pkg-config
+        git
       ];
-
-      postInstall = ''
-        # Install shell completions
-        mkdir -p $out/share/bash-completion/completions
-        mkdir -p $out/share/zsh/site-functions
-
-        if [ -f $src/completions/claude-tools.bash ]; then
-          cp $src/completions/claude-tools.bash $out/share/bash-completion/completions/claude-tools
-        fi
-
-        if [ -f $src/completions/claude-tools.zsh ]; then
-          cp $src/completions/claude-tools.zsh $out/share/zsh/site-functions/_claude-tools
-        fi
-      '';
     in {
       devShells.default = pkgs.mkShell {
         name = config.name;
@@ -49,44 +37,48 @@
         ENV_ICON = "❄️";
 
         shellHook = ''
-          if [ ! -d ".git" ]; then
-            git init
+          if [ ! -d "./_opam" ]; then
+            echo "🐪 No local opam switch found for this project."
+            echo "  Creating local switch '.' with ocaml-base-compiler.5.4.0 ..."
+            opam switch create . ocaml-base-compiler.5.4.0
+
+            # Prime the env for this first session only
+            eval "$(opam env --switch=. --set-switch)"
+
+            opam install -y \
+              dune \
+              utop \
+              ocaml-lsp-server \
+              ocamlformat \
+              odoc
+
+            echo "  Creating claude-tools.opam"
+            dune build >/dev/null 2>&1
+
+            echo "  Installing project dependencies"
+            opam install -y . --deps-only --with-test --with-dev-setup
+
+            echo "  Building project files"
+            dune build
+
+            echo "  All dependencies should be installed. Running tests"
+            dune test
+
+            echo "✅ Local switch create."
+            echo "  From now on, .envrc will auto load it when you cd here."
+            echo ""
           fi
 
           echo "🐫 OCaml Development Environment"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "OCaml version: $(ocaml -vnum)"
-          echo "Dune version: $(dune --version)"
+          if command -v ocaml >/dev/null 2>&1; then
+            echo "OCaml version: $(ocaml -vnum)"
+          fi
+          if command -v dune >/dev/null 2>&1; then
+            echo "Dune version: $(dune --version)"
+          fi
           echo "Opam version: $(opam --version)"
           echo ""
-
-          # Create local switch (without dependencies - fast!)
-          if [ ! -d "_opam" ]; then
-            echo "Creating local switch for OCaml $(ocaml -vnum)..."
-            opam switch create . $(ocaml -vnum)
-            echo ""
-
-            # Generate .opam file from dune-project (doesn't need dependencies)
-            eval $(opam env)
-            dune build claude-tools.opam
-            echo ""
-
-            echo "Install dependencies:"
-            echo "  • opam install . --deps-only                              (minimal - exe only)"
-            echo "  • opam install . --deps-only --with-test                  (+ testing)"
-            echo "  • opam install . --deps-only --with-dev-setup --with-test (+ LSP/tools)"
-            echo ""
-            echo "Then build with:"
-            echo "  • dune build @install  (builds lib + exe, skips tests)"
-            echo "  • dune build           (builds everything including tests)"
-            echo ""
-          fi
-
-          echo "Development workflow:"
-          echo "  • dune build         - Build project"
-          echo "  • dune test          - Run tests"
-          echo "  • utop               - Interactive REPL"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         '';
       };
     });

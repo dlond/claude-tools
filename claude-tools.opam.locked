@@ -1,0 +1,116 @@
+opam-version: "2.0"
+name: "claude-tools"
+version: "dev"
+synopsis: "Unix-like tools for Claude Code conversations"
+description: "Manage Claude Code conversations with familiar commands"
+maintainer: "Maintainer D <dlond@me.com>"
+authors: "Author D <dlond@me.com>"
+license: "MIT"
+tags: ["add topics" "to describe" "your" "project"]
+homepage: "https://github.com/dlond/claude-tools"
+doc: "https://url/to/documentation"
+bug-reports: "https://github.com/dlond/claude-tools/issues"
+depends: [
+  "alcotest" {= "1.9.1" & with-test}
+  "astring" {= "0.8.5" & with-test}
+  "base" {= "v0.17.3" & with-dev-setup}
+  "base-bigarray" {= "base"}
+  "base-bytes" {= "base" & with-dev-setup}
+  "base-domains" {= "base"}
+  "base-effects" {= "base"}
+  "base-nnp" {= "base"}
+  "base-threads" {= "base"}
+  "base-unix" {= "base"}
+  "camlp-streams" {= "5.0.1" & with-doc}
+  "chrome-trace" {= "3.20.2" & with-dev-setup}
+  "cmdliner" {= "2.0.0"}
+  "cppo" {= "1.8.0" & with-doc}
+  "crunch" {= "4.0.0" & with-doc}
+  "csexp" {= "1.5.2" & with-dev-setup}
+  "dot-merlin-reader" {= "5.6-504" & with-dev-setup}
+  "dune" {= "3.20.2"}
+  "dune-build-info" {= "3.20.2" & with-dev-setup}
+  "dune-configurator" {= "3.20.2" & with-dev-setup}
+  "dune-rpc" {= "3.20.2" & with-dev-setup}
+  "dyn" {= "3.20.2" & with-dev-setup}
+  "either" {= "1.0.0" & with-dev-setup}
+  "fiber" {= "3.7.0" & with-dev-setup}
+  "fix" {= "20250919" & with-dev-setup}
+  "fmt" {= "0.11.0" & with-test}
+  "fpath" {= "0.7.3" & with-doc}
+  "jsonrpc" {= "1.24.0" & with-dev-setup}
+  "lambda-term" {= "3.3.2" & with-dev-setup}
+  "logs" {= "0.10.0" & with-dev-setup}
+  "lsp" {= "1.24.0" & with-dev-setup}
+  "lwt" {= "5.9.2" & with-dev-setup}
+  "lwt_react" {= "1.2.0" & with-dev-setup}
+  "menhir" {= "20250912" & with-dev-setup}
+  "menhirCST" {= "20250912" & with-dev-setup}
+  "menhirLib" {= "20250912" & with-dev-setup}
+  "menhirSdk" {= "20250912" & with-dev-setup}
+  "merlin" {= "5.6-504" & with-dev-setup}
+  "merlin-lib" {= "5.6-504" & with-dev-setup}
+  "mew" {= "0.1.0" & with-dev-setup}
+  "mew_vi" {= "0.5.0" & with-dev-setup}
+  "ocaml" {= "5.4.0"}
+  "ocaml-base-compiler" {= "5.4.0"}
+  "ocaml-compiler" {= "5.4.0"}
+  "ocaml-config" {= "3"}
+  "ocaml-index" {= "5.6-504" & with-dev-setup}
+  "ocaml-lsp-server" {= "1.24.0" & with-dev-setup}
+  "ocaml-options-vanilla" {= "1"}
+  "ocaml-syntax-shims" {= "1.0.0" & with-test}
+  "ocaml-version" {= "4.0.3" & with-dev-setup}
+  "ocaml_intrinsics_kernel" {= "v0.17.1" & with-dev-setup}
+  "ocamlbuild" {= "0.16.1"}
+  "ocamlc-loc" {= "3.20.2" & with-dev-setup}
+  "ocamlfind" {= "1.9.8"}
+  "ocamlformat" {= "0.28.1" & with-dev-setup}
+  "ocamlformat-lib" {= "0.28.1" & with-dev-setup}
+  "ocamlformat-rpc-lib" {= "0.28.1" & with-dev-setup}
+  "ocp-indent" {= "1.9.0" & with-dev-setup}
+  "ocplib-endian" {= "1.2" & with-dev-setup}
+  "odoc" {= "3.1.0" & with-doc}
+  "odoc-parser" {= "3.1.0" & with-doc}
+  "ordering" {= "3.20.2" & with-dev-setup}
+  "pp" {= "2.0.0" & with-dev-setup}
+  "ppx_yojson_conv_lib" {= "v0.17.0" & with-dev-setup}
+  "ptime" {= "1.2.0" & with-doc}
+  "re" {= "1.14.0" & with-test}
+  "react" {= "1.2.2" & with-dev-setup}
+  "result" {= "1.5" & with-dev-setup}
+  "seq" {= "base" & with-doc}
+  "sexplib0" {= "v0.17.0" & with-dev-setup}
+  "spawn" {= "v0.17.0" & with-dev-setup}
+  "stdio" {= "v0.17.0" & with-dev-setup}
+  "stdlib-shims" {= "0.3.0" & with-test}
+  "stdune" {= "3.20.2" & with-dev-setup}
+  "topkg" {= "1.1.1"}
+  "trie" {= "1.0.0" & with-dev-setup}
+  "tyxml" {= "4.6.0" & with-doc}
+  "uchar" {= "0.0.2" & with-dev-setup}
+  "utop" {= "2.16.0" & with-dev-setup}
+  "uucp" {= "17.0.0" & with-dev-setup}
+  "uuidm" {= "0.9.10"}
+  "uuseg" {= "17.0.0" & with-dev-setup}
+  "uutf" {= "1.0.4" & with-test}
+  "xdg" {= "3.20.2" & with-dev-setup}
+  "yojson" {= "3.0.0"}
+  "zed" {= "3.2.3" & with-dev-setup}
+]
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+]
+dev-repo: "git+https://github.com/dlond/claude-tools.git"
+x-maintenance-intent: ["(latest)"]
