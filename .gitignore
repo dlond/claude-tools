@@ -1,11 +1,11 @@
 # OCaml/Opam/Dune build artifacts
 _build/
 _opam/
+dist/
 *.install
 *.merlin
-
-# Generated from dune-project
 *.opam
+claude-tools-aarch64-darwin.tar.gz
 
 # Editor/Enviroment
 .direnv/
@@ -15,3 +15,6 @@ _opam/
 
 # Nix
 result
+
+# Private notes
+obsidian-docs

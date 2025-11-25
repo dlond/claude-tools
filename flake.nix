@@ -42,7 +42,7 @@
 
             # worktrees just link switches
             if [ -f ".git" ]; then
-              MAIN_WT=$(awk '($1 == "gitdir:") { print $2; exit }' .git)
+              MAIN_WT=$(git worktree list | awk 'NR == 1 { print $1; exit }')
               echo "   Linking project opam switch at $MAIN_WT ..."
               opam switch link $MAIN_WT
             else
